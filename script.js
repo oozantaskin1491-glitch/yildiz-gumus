@@ -104,10 +104,10 @@ function loadFirebase() {
   return new Promise((resolve) => {
     if (!FB_ON) return resolve(false);
     const app = document.createElement("script");
-    app.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
+    app.src = "firebase-app-compat.js";   /* yerel kopya — CDN bağımlılığı yok */
     app.onload = () => {
       const db = document.createElement("script");
-      db.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js";
+      db.src = "firebase-database-compat.js";   /* yerel kopya */
       db.onload = () => {
         try {
           firebase.initializeApp(window.YG_FIREBASE);
