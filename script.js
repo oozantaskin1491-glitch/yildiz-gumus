@@ -6,7 +6,13 @@
 const LS_PRODUCTS = "yg_products_v1";
 const LS_DOMAIN = "yg_shopify_domain";
 const LS_PASS = "yg_admin_pass";
+const LS_IG = "yg_instagram";
+const LS_WA = "yg_whatsapp";
+const LS_MAIL = "yg_supportmail";
 const DEFAULT_PASS = "yildiz123";
+const DEFAULT_IG = "yildizgumus";
+const DEFAULT_WA = "";
+const DEFAULT_MAIL = "destek@yildizgumus.com";
 const PLACEHOLDER = /^(1111|2222|3333|4444|5555|6666|7777|8888)/;
 
 /* Eski tarayıcılar için structuredClone yedeği */
@@ -136,6 +142,9 @@ function saveSettingsToCloud() {
   FB.ref("settings").set({
     domain: SHOPIFY.domain,
     pass: getPass(),
+    ig: CONTACT.ig,
+    wa: CONTACT.wa,
+    mail: CONTACT.mail,
   }).catch(e => console.warn("Bulut ayar hatası:", e));
 }
 
@@ -174,12 +183,25 @@ function attachRealtime() {
     })
     .catch(e => console.warn("Realtime bağlantı hatası:", e));
 
-  /* ayarlar da senkron olsun (domain + şifre her cihazda aynı) */
+  /* ayarlar da senkron olsun (domain + şifre + iletişim her cihazda aynı) */
   FB.ref("settings").on("value", snap => {
     const v = snap.val();
     if (v) {
       if (v.domain) localStorage.setItem(LS_DOMAIN, v.domain);
       if (v.pass) localStorage.setItem(LS_PASS, v.pass);
+      if (v.ig !== undefined) localStorage.setItem(LS_IG, v.ig);
+      if (v.wa !== undefined) localStorage.setItem(LS_WA, v.wa);
+      if (v.mail !== undefined) localStorage.setItem(LS_MAIL, v.mail);
+      applyContact();
+      /* panel açıksa alanları tazele */
+      const open = document.getElementById("shopDomain");
+      if (open && !document.getElementById("adminOverlay").hidden) {
+        document.getElementById("shopDomain").value = SHOPIFY.domain;
+        document.getElementById("adminPassSet").value = getPass();
+        document.getElementById("cIg").value = CONTACT.ig;
+        document.getElementById("cWa").value = CONTACT.wa;
+        document.getElementById("cMail").value = CONTACT.mail;
+      }
     }
   });
 }
@@ -190,6 +212,32 @@ const SHOPIFY = {
   },
   set domain(v) { localStorage.setItem(LS_DOMAIN, v); }
 };
+
+/* İletişim bilgileri — panelden değiştirilir, buluta senkron olur */
+const CONTACT = {
+  get ig() { return localStorage.getItem(LS_IG) ?? DEFAULT_IG; },
+  set ig(v) { localStorage.setItem(LS_IG, v); },
+  get wa() { return localStorage.getItem(LS_WA) ?? DEFAULT_WA; },
+  set wa(v) { localStorage.setItem(LS_WA, v); },
+  get mail() { return localStorage.getItem(LS_MAIL) ?? DEFAULT_MAIL; },
+  set mail(v) { localStorage.setItem(LS_MAIL, v); }
+};
+
+/* Footer'daki iletişim bağlantılarını ayarlara göre güncelle */
+function applyContact() {
+  const setLink = (id, href, text) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (href) { el.href = href; el.textContent = text; el.style.display = ""; }
+    else { el.style.display = "none"; }
+  };
+  const ig = (CONTACT.ig || "").trim().replace(/^@/, "");
+  setLink("contactIg", ig ? "https://instagram.com/" + encodeURIComponent(ig) : "", ig ? "@" + ig : "");
+  const wa = (CONTACT.wa || "").replace(/\D/g, "");
+  setLink("contactWa", wa ? "https://wa.me/" + wa : "", "WhatsApp");
+  const mail = (CONTACT.mail || "").trim();
+  setLink("contactMail", mail ? "mailto:" + mail : "", mail);
+}
 
 let PRODUCTS = lsLoad();
 
@@ -397,6 +445,9 @@ function openAdmin() {
   document.body.style.overflow = "hidden";
   document.getElementById("shopDomain").value = SHOPIFY.domain;
   document.getElementById("adminPassSet").value = getPass();
+  document.getElementById("cIg").value = CONTACT.ig;
+  document.getElementById("cWa").value = CONTACT.wa;
+  document.getElementById("cMail").value = CONTACT.mail;
   renderAdminList();
   resetForm();
 }
@@ -557,6 +608,10 @@ document.getElementById("saveSettings").addEventListener("click", ev => {
   const pw = document.getElementById("adminPassSet").value.trim();
   if (d) SHOPIFY.domain = d.replace(/\/$/, "");
   if (pw) localStorage.setItem(LS_PASS, pw);
+  CONTACT.ig = document.getElementById("cIg").value.trim();
+  CONTACT.wa = document.getElementById("cWa").value.trim();
+  CONTACT.mail = document.getElementById("cMail").value.trim();
+  applyContact();
   saveSettingsToCloud();
   renderAdminList();
   const b = ev.currentTarget, old = b.textContent;
@@ -567,10 +622,18 @@ document.getElementById("resetAll").addEventListener("click", () => {
   if (!confirm("Tüm ürünler ve ayarlar ilk haline dönsün mü?")) return;
   PRODUCTS = clone(DEFAULT_PRODUCTS);
   saveProducts();
+  CONTACT.ig = DEFAULT_IG;
+  CONTACT.wa = DEFAULT_WA;
+  CONTACT.mail = DEFAULT_MAIL;
+  applyContact();
+  saveSettingsToCloud();
+  const ci = document.getElementById("cIg");
+  if (ci) { ci.value = DEFAULT_IG; document.getElementById("cWa").value = DEFAULT_WA; document.getElementById("cMail").value = DEFAULT_MAIL; }
   render(); renderAdminList(); resetForm();
 });
 
 /* ---------- İlk kurulum ---------- */
+applyContact();
 observeReveals();
 
 /* Firebase varsa buluta bağlan, canlı senkronu başlat.
