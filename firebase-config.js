@@ -2,14 +2,13 @@
    FIREBASE AYARLARI  (Yönetim panelinin tüm ziyaretçilere
    canlı yansıması için gerekli)
    ---------------------------------------------------------
-   Bu dosyayı DOKUNMA, değerleri Firebase konsolundan alıp
-   aşağıdaki boşluklara yapıştıracağım. Değerler boşken site
-   eski çalışmaya devam eder (ürünler sadece senin tarayıcında).
+   databaseURL boşken site localStorage ile normal çalışır.
+   databaseURL girilince ürünler + ayarlar buluta senkron olur.
    ========================================================= */
 window.YG_FIREBASE = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",   /* EN ÖNEMLİSİ — ...firebaseio.com ile biter */
-  projectId: "",
-  appId: ""
+  apiKey: "AIzaSyCbB3aWVGb5By3f_1pZUesC8m7h0ALi9Uo",
+  authDomain: "yildiz-8a514.firebaseapp.com",
+  databaseURL: "",   /* BURASI DOLACAK — Realtime Database adresin */
+  projectId: "yildiz-8a514",
+  appId: "1:643354962733:web:223925731fa627ed76c1a4"
 };
