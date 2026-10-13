@@ -139,27 +139,38 @@ function saveSettingsToCloud() {
   }).catch(e => console.warn("Bulut ayar hatası:", e));
 }
 
-/* Firebase'i başlat: ÖNCE gerekirse tohumla, SONRA canlı dinle.
-   Sıralı çalıştığı için yarış olmaz, veri kaybı yaşanmaz. */
+/* Anlık veriyi ekrana ve localStorage'a uygula */
+function applyProductsFromSnapshot(snap) {
+  const v = snap.val();
+  const arr = Array.isArray(v) ? v : (v ? Object.values(v) : []);
+  PRODUCTS = arr.map((p, i) => normalizeProduct(p, i));
+  lsSave(PRODUCTS);
+  render(); renderAdminList();
+}
+
+/* Firebase'i başlat: ÖNCE gerekirse tohumla, veriyi tek seferlik oku
+   (her ağda çalışır), SONRA canlı dinlemeyi ekle. Sıralı olduğu için
+   yarış olmaz, veri kaybı yaşanmaz. */
 function attachRealtime() {
   if (!FB_READY) return;
 
   FB.ref("products").once("value")
     .then(snap => {
-      if (snap.exists()) return null;
-      /* bulut boş → ilk kurulum: lokal/varsayılan ürünleri yükle */
-      const seed = lsLoad();
-      return FB.ref("products").set(seed.map(cleanForFirebase));
+      if (!snap.exists()) {
+        /* bulut boş → ilk kurulum: lokal/varsayılan ürünleri yükle */
+        const seed = lsLoad();
+        return FB.ref("products").set(seed.map(cleanForFirebase)).then(() => true);
+      }
+      applyProductsFromSnapshot(snap);   /* veri var: hemen uygula */
+      return false;
     })
-    .then(() => {
-      /* bundan sonra güvenle canlı dinle */
-      FB.ref("products").on("value", snap => {
-        const v = snap.val();
-        const arr = Array.isArray(v) ? v : (v ? Object.values(v) : []);
-        PRODUCTS = arr.map((p, i) => normalizeProduct(p, i));
-        lsSave(PRODUCTS);
-        render(); renderAdminList();
-      });
+    .then(seeded => {
+      if (seeded) {
+        /* tohumladık: temiz halde bir kez daha oku ve uygula */
+        FB.ref("products").once("value").then(applyProductsFromSnapshot);
+      }
+      /* canlı dinleme: bundan sonraki değişiklikler anında yansır */
+      FB.ref("products").on("value", applyProductsFromSnapshot);
     })
     .catch(e => console.warn("Realtime bağlantı hatası:", e));
 
