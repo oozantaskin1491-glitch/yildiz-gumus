@@ -19,6 +19,28 @@ const esc = s => String(s ?? "")
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
   .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
+/* Ürün kaydını güvenli forma çevirir (eksik alanları tamamlar) */
+function normalizeProduct(p, i) {
+  return {
+    id: p.id ?? (Date.now() + i),
+    name: String(p.name ?? "İsimsiz ürün"),
+    cat: ["kolye", "kupe", "yuzuk", "bileklik"].includes(p.cat) ? p.cat : "kolye",
+    price: Number(p.price) || 0,
+    old: Number(p.old) || 0,
+    tag: String(p.tag ?? ""),
+    desc: String(p.desc ?? ""),
+    img: String(p.img ?? "") || IMG("photo-1515562141207-7a88fb7ce338"),
+    variantId: String(p.variantId ?? ""),
+    url: p.url ? String(p.url) : undefined,
+  };
+}
+/* Firebase `undefined` kabul etmez — göndermeden temizle */
+function cleanForFirebase(o) {
+  const c = {};
+  for (const k in o) if (o[k] !== undefined) c[k] = o[k];
+  return c;
+}
+
 /* Kırık görsel yedeği (head'deki dinleyiciyle birlikte çift güvence) */
 if (!window.__imgFB) {
   window.__imgFB = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
@@ -51,32 +73,100 @@ const DEFAULT_PRODUCTS = [
     desc: "Charm detaylı · hediye kutulu", img: IMG("photo-1515562141207-7a88fb7ce338"), variantId: "8888888888888" },
 ];
 
-/* ---------- Kalıcı veri ---------- */
-function loadProducts() {
+/* =========================================================
+   VERİ KATMANI
+   Firebase yapılandırıldıysa ürünler ve ayarlar BULUTTA
+   tutulur → panelde yapılan her değişiklik tüm ziyaretçilere
+   anında yansır. Firebase yoksa site eski gibi localStorage
+   ile çalışır (düzgün kapanır, hata vermez).
+   ========================================================= */
+let FB = null;            // Firebase.database() referansı
+let FB_READY = false;     // bağlantı kuruldu mu
+const FB_ON = !!(window.YG_FIREBASE && window.YG_FIREBASE.databaseURL);
+
+/* --- localStorage yedeği --- */
+function lsLoad() {
   try {
     const raw = localStorage.getItem(LS_PRODUCTS);
     if (!raw) return clone(DEFAULT_PRODUCTS);
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr) || !arr.length) return clone(DEFAULT_PRODUCTS);
-    /* eski kayıtlarla uyumluluk: eksik alanları tamamla */
-    return arr.map((p, i) => ({
-      id: p.id ?? Date.now() + i,
-      name: String(p.name ?? "İsimsiz ürün"),
-      cat: ["kolye", "kupe", "yuzuk", "bileklik"].includes(p.cat) ? p.cat : "kolye",
-      price: Number(p.price) || 0,
-      old: Number(p.old) || 0,
-      tag: String(p.tag ?? ""),
-      desc: String(p.desc ?? ""),
-      img: String(p.img ?? "") || IMG("photo-1515562141207-7a88fb7ce338"),
-      variantId: String(p.variantId ?? ""),
-      url: p.url ? String(p.url) : undefined,
-    }));
+    return arr.map(normalizeProduct);
   } catch { return clone(DEFAULT_PRODUCTS); }
 }
-function saveProducts() {
-  try { localStorage.setItem(LS_PRODUCTS, JSON.stringify(PRODUCTS)); }
+function lsSave(arr) {
+  try { localStorage.setItem(LS_PRODUCTS, JSON.stringify(arr)); }
   catch { toastMsg("Depolama dolu: fotoğrafı link olarak eklemeyi dene."); }
 }
+
+/* --- Firebase SDK yükle --- */
+function loadFirebase() {
+  return new Promise((resolve) => {
+    if (!FB_ON) return resolve(false);
+    const app = document.createElement("script");
+    app.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
+    app.onload = () => {
+      const db = document.createElement("script");
+      db.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js";
+      db.onload = () => {
+        try {
+          firebase.initializeApp(window.YG_FIREBASE);
+          FB = firebase.database();
+          resolve(true);
+        } catch (e) { console.warn("Firebase init hatası:", e); resolve(false); }
+      };
+      db.onerror = () => resolve(false);
+      document.head.appendChild(db);
+    };
+    app.onerror = () => resolve(false);
+    document.head.appendChild(app);
+  });
+}
+
+/* --- Yazma: Firebase varsa buluta, ayrıca yedek localStorage --- */
+function saveProducts() {
+  lsSave(PRODUCTS);
+  if (!FB_READY) return;
+  const obj = {};
+  PRODUCTS.forEach(p => { obj[p.id] = cleanForFirebase(p); });
+  FB.ref("products").set(obj).catch(e => console.warn("Bulut kayıt hatası:", e));
+}
+function saveSettingsToCloud() {
+  if (!FB_READY) return;
+  FB.ref("settings").set({
+    domain: SHOPIFY.domain,
+    pass: getPass(),
+  }).catch(e => console.warn("Bulut ayar hatası:", e));
+}
+
+/* --- Ürün listesini buluttan çek, canlı dinle --- */
+function attachRealtime() {
+  if (!FB_READY) return;
+  /* başlangıç: bulut boşsa mevcut (localStorage) ürünleri buluta yükle */
+  FB.ref("products").once("value").then(snap => {
+    if (!snap.exists()) {
+      saveProducts();  // ilk senkron: local ürünleri buluta yaz
+    }
+  });
+  /* canlı dinleme: her değişiklikte listeyi yenile */
+  FB.ref("products").on("value", snap => {
+    const v = snap.val();
+    if (v) {
+      PRODUCTS = Object.keys(v).map(k => normalizeProduct(v[k], 0));
+      lsSave(PRODUCTS);
+      render(); renderAdminList();
+    }
+  });
+  /* ayarlar da senkron olsun (domain + şifre her cihazda aynı) */
+  FB.ref("settings").on("value", snap => {
+    const v = snap.val();
+    if (v) {
+      if (v.domain) localStorage.setItem(LS_DOMAIN, v.domain);
+      if (v.pass) localStorage.setItem(LS_PASS, v.pass);
+    }
+  });
+}
+
 const SHOPIFY = {
   get domain() {
     return localStorage.getItem(LS_DOMAIN) || "https://yildiz-gumus.myshopify.com";
@@ -84,7 +174,7 @@ const SHOPIFY = {
   set domain(v) { localStorage.setItem(LS_DOMAIN, v); }
 };
 
-let PRODUCTS = loadProducts();
+let PRODUCTS = lsLoad();
 
 const CAT_LABEL = { kolye: "KOLYE", kupe: "KÜPE", yuzuk: "YÜZÜK", bileklik: "BİLEKLİK" };
 const fmt = n => new Intl.NumberFormat("tr-TR").format(n);
@@ -450,6 +540,7 @@ document.getElementById("saveSettings").addEventListener("click", ev => {
   const pw = document.getElementById("adminPassSet").value.trim();
   if (d) SHOPIFY.domain = d.replace(/\/$/, "");
   if (pw) localStorage.setItem(LS_PASS, pw);
+  saveSettingsToCloud();
   renderAdminList();
   const b = ev.currentTarget, old = b.textContent;
   b.textContent = "Kaydedildi ✓";
@@ -464,3 +555,10 @@ document.getElementById("resetAll").addEventListener("click", () => {
 
 /* ---------- İlk kurulum ---------- */
 observeReveals();
+
+/* Firebase varsa buluta bağlan, canlı senkronu başlat.
+   Yoksa site localStorage ile normal çalışmaya devam eder. */
+(async function bootCloud() {
+  const ok = await loadFirebase();
+  if (ok) { FB_READY = true; attachRealtime(); }
+})();
