@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024" role="img" aria-label="Yıldız Gümüş Takı Mağazası logosu">
+  <defs>
+    <!-- koyu metalik (açık zemin için) -->
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#4a4a4f"/>
+      <stop offset="26%" stop-color="#2b2b2f"/>
+      <stop offset="50%" stop-color="#151517"/>
+      <stop offset="66%" stop-color="#2f2f34"/>
+      <stop offset="100%" stop-color="#1b1b1e"/>
+    </linearGradient>
+    <!-- altın -->
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#e7c76a"/>
+      <stop offset="35%" stop-color="#c9a13f"/>
+      <stop offset="60%" stop-color="#9c7729"/>
+      <stop offset="82%" stop-color="#c6a044"/>
+      <stop offset="100%" stop-color="#8a6a25"/>
+    </linearGradient>
+    <linearGradient id="goldH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#8a6a25"/>
+      <stop offset="50%" stop-color="#e3c469"/>
+      <stop offset="100%" stop-color="#8a6a25"/>
+    </linearGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#e9cd76"/>
+      <stop offset="55%" stop-color="#c9a13f"/>
+      <stop offset="100%" stop-color="#8a6a25"/>
+    </linearGradient>
+  </defs>
+
+  <!-- şeffaf zemin -->
+
+  <!-- ===== YG AMBLEM ===== -->
+  <g transform="translate(752 300)">
+    <!-- yörünge halkası -->
+    <ellipse rx="330" ry="150" transform="rotate(-22)" fill="none" stroke="url(#goldH)" stroke-width="12"/>
+
+    <!-- Y harfi -->
+    <text x="-40" y="150" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif" font-size="360" font-weight="700"
+          fill="url(#ink)" transform="scale(1.02 1.14)">Y</text>
+
+    <!-- G harfi (altın kenarlı) -->
+    <text x="70" y="205" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif" font-size="330" font-weight="700"
+          fill="url(#ink)" stroke="url(#gold)" stroke-width="5"
+          transform="scale(1.02 1.12)">G</text>
+
+    <!-- 4 uçlu altın yıldız -->
+    <g transform="translate(150 -185)">
+      <path d="M0,-150 Q16,-20 60,0 Q16,20 0,150 Q-16,20 -60,0 Q-16,-20 0,-150 Z" fill="url(#star)"/>
+    </g>
+  </g>
+
+  <!-- ===== YILDIZ ===== -->
+  <text x="768" y="800" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="215" font-weight="700"
+        letter-spacing="10" fill="url(#ink)">YILDIZ</text>
+
+  <!-- ===== GÜMÜŞ + yan çizgiler ===== -->
+  <g>
+    <rect x="150" y="878" width="300" height="6" rx="3" fill="url(#goldH)"/>
+    <polygon points="450,868 486,881 450,894" fill="url(#gold)"/>
+    <rect x="1086" y="878" width="300" height="6" rx="3" fill="url(#goldH)"/>
+    <polygon points="1086,868 1050,881 1086,894" fill="url(#gold)"/>
+    <text x="768" y="912" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="700"
+          letter-spacing="26" fill="url(#ink)">GÜMÜŞ</text>
+  </g>
+
+  <!-- ===== TAKI MAĞAZASI ===== -->
+  <text x="768" y="995" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="400"
+        letter-spacing="30" fill="url(#gold)">TAKI MAĞAZASI</text>
+</svg>

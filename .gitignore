@@ -1,0 +1,12 @@
+# İşletim sistemi
+.DS_Store
+Thumbs.db
+
+# Editör
+.vscode/
+.idea/
+
+# Geçici / yedek
+*.log
+*.bak
+*.tmp

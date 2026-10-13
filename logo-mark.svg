@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Yıldız Gümüş amblem">
+  <defs>
+    <linearGradient id="mInk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#43434a"/>
+      <stop offset="30%" stop-color="#26262a"/>
+      <stop offset="55%" stop-color="#141416"/>
+      <stop offset="75%" stop-color="#2c2c31"/>
+      <stop offset="100%" stop-color="#1a1a1d"/>
+    </linearGradient>
+    <linearGradient id="mGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#e7c76a"/>
+      <stop offset="50%" stop-color="#c9a13f"/>
+      <stop offset="100%" stop-color="#8a6a25"/>
+    </linearGradient>
+    <linearGradient id="mGoldH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#8a6a25"/>
+      <stop offset="50%" stop-color="#e3c469"/>
+      <stop offset="100%" stop-color="#8a6a25"/>
+    </linearGradient>
+    <linearGradient id="mStar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#e9cd76"/>
+      <stop offset="55%" stop-color="#c9a13f"/>
+      <stop offset="100%" stop-color="#8a6a25"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ince altın çerçeve, içi şeffaf -->
+  <rect x="4" y="4" width="392" height="392" rx="72" fill="none" stroke="url(#mGoldH)" stroke-width="3.5"/>
+
+  <g transform="translate(200 215)">
+    <ellipse rx="150" ry="66" transform="rotate(-22)" fill="none" stroke="url(#mGoldH)" stroke-width="7"/>
+    <text x="-20" y="66" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif" font-size="175" font-weight="700"
+          fill="url(#mInk)" transform="scale(1.02 1.14)">Y</text>
+    <text x="34" y="92" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif" font-size="160" font-weight="700"
+          fill="url(#mInk)" stroke="url(#mGold)" stroke-width="3" transform="scale(1.02 1.12)">G</text>
+    <g transform="translate(70 -86)">
+      <path d="M0,-72 Q8,-10 29,0 Q8,10 0,72 Q-8,10 -29,0 Q-8,-10 0,-72 Z" fill="url(#mStar)"/>
+    </g>
+  </g>
+</svg>
