@@ -127,9 +127,9 @@ function loadFirebase() {
 function saveProducts() {
   lsSave(PRODUCTS);
   if (!FB_READY) return;
-  const obj = {};
-  PRODUCTS.forEach(p => { obj[p.id] = cleanForFirebase(p); });
-  FB.ref("products").set(obj).catch(e => console.warn("Bulut kayıt hatası:", e));
+  /* DİZİ olarak yaz → ürün sırası korunur (yenisi en üstte kalır) */
+  FB.ref("products").set(PRODUCTS.map(cleanForFirebase))
+    .catch(e => console.warn("Bulut kayıt hatası:", e));
 }
 function saveSettingsToCloud() {
   if (!FB_READY) return;
@@ -139,24 +139,30 @@ function saveSettingsToCloud() {
   }).catch(e => console.warn("Bulut ayar hatası:", e));
 }
 
-/* --- Ürün listesini buluttan çek, canlı dinle --- */
+/* Firebase'i başlat: ÖNCE gerekirse tohumla, SONRA canlı dinle.
+   Sıralı çalıştığı için yarış olmaz, veri kaybı yaşanmaz. */
 function attachRealtime() {
   if (!FB_READY) return;
-  /* başlangıç: bulut boşsa mevcut (localStorage) ürünleri buluta yükle */
-  FB.ref("products").once("value").then(snap => {
-    if (!snap.exists()) {
-      saveProducts();  // ilk senkron: local ürünleri buluta yaz
-    }
-  });
-  /* canlı dinleme: her değişiklikte listeyi yenile */
-  FB.ref("products").on("value", snap => {
-    const v = snap.val();
-    if (v) {
-      PRODUCTS = Object.keys(v).map(k => normalizeProduct(v[k], 0));
-      lsSave(PRODUCTS);
-      render(); renderAdminList();
-    }
-  });
+
+  FB.ref("products").once("value")
+    .then(snap => {
+      if (snap.exists()) return null;
+      /* bulut boş → ilk kurulum: lokal/varsayılan ürünleri yükle */
+      const seed = lsLoad();
+      return FB.ref("products").set(seed.map(cleanForFirebase));
+    })
+    .then(() => {
+      /* bundan sonra güvenle canlı dinle */
+      FB.ref("products").on("value", snap => {
+        const v = snap.val();
+        const arr = Array.isArray(v) ? v : (v ? Object.values(v) : []);
+        PRODUCTS = arr.map((p, i) => normalizeProduct(p, i));
+        lsSave(PRODUCTS);
+        render(); renderAdminList();
+      });
+    })
+    .catch(e => console.warn("Realtime bağlantı hatası:", e));
+
   /* ayarlar da senkron olsun (domain + şifre her cihazda aynı) */
   FB.ref("settings").on("value", snap => {
     const v = snap.val();
